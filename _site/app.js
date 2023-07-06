@@ -1235,7 +1235,10 @@
 			this.search.query.bool[bool].push(clause);
 			return clause;
 		},
-		getData: function() {
+		getData: function(onlyCount) {
+			//this.search.track_total_hits=true;
+			if (onlyCount)
+				return JSON.stringify({"query":this.search.query});
 			return JSON.stringify(this.search);
 		}
 	});
@@ -1344,13 +1347,18 @@
 			this.clusterNodes = null;
 		},
 		refresh: function() {
-			var uriTitle=this.config.cluster.base_uri;
-			uriTitle=uriTitle.substring(uriTitle.indexOf("//")+2);
-			uriTitle=uriTitle.substring(0, uriTitle.indexOf("/"));
-			var uriTitlePort=uriTitle.indexOf(":");
-			if (uriTitlePort>0)
-				uriTitle=uriTitle.substring(uriTitlePort+1)+":"+uriTitle.substring(0, uriTitlePort);
-			document.title=uriTitle;
+			if (myTitle)
+				document.title=myTitle;
+			else
+			{
+				var uriTitle=this.config.cluster.base_uri;
+				uriTitle=uriTitle.substring(uriTitle.indexOf("//")+2);
+				uriTitle=uriTitle.substring(0, uriTitle.indexOf("/"));
+				var uriTitlePort=uriTitle.indexOf(":");
+				if (uriTitlePort>0)
+					uriTitle=uriTitle.substring(uriTitlePort+1)+":"+uriTitle.substring(0, uriTitlePort);
+				document.title=uriTitle;
+			}
 
 			var self = this, clusterState, status, nodeStats, clusterNodes, clusterHealth;
 			function updateModel() {
@@ -3892,7 +3900,8 @@ function limitText(text, len)
 			var typeMap = {
 				"json": this._jsonResults_handler,
 				"table": this._tableResults_handler,
-				"csv": this._csvResults_handler
+				"csv": this._csvResults_handler,
+				"count": this._countResults_handler
 			};
 			typeMap[ event.type ].call( this, event.data, event.metadata );
 		},
@@ -3901,6 +3910,9 @@ function limitText(text, len)
 		},
 		_csvResults_handler: function( results ) {
 			this.el.find("DIV.uiStructuredQuery-out").empty().append( new ui.CSVTable({ results: results }));
+		},
+		_countResults_handler: function( results ) {
+			this.el.find("DIV.uiStructuredQuery-out").empty().append( "共有结果："+ results.count );
 		},
 		_tableResults_handler: function( results, metadata ) {
 			// hack up a QueryDataSourceInterface so that StructuredQuery keeps working without using a Query object
@@ -4149,7 +4161,16 @@ function limitText(text, len)
 			if(this.el.find(".uiFilterBrowser-showSrc").attr("checked")) {
 				this.fire("searchSource", search.search);
 			}
-			this._cluster.post( this.config.index + "/_search", search.getData(), this._results_handler );
+			var onlyCount=this.el.find(".uiFilterBrowser-onlyCount").attr("checked");
+			if (onlyCount)
+				this._cluster.post( this.config.index + "/_count", search.getData(onlyCount), this._count_handler );
+			else
+				this._cluster.post( this.config.index + "/_search", search.getData(onlyCount), this._results_handler );
+		},
+
+		_count_handler: function(data) {
+			var type = "count";
+			this.fire("results", this, { type: type, data: data, metadata: this.metadata });
 		},
 		
 		_results_handler: function( data ) {
@@ -4215,7 +4236,8 @@ function limitText(text, len)
 						children: [ "20", "10", "50", "200", "500", "1500", "4000", "10000" ].map( ut.option_template )
 					} )
 				},
-				{ tag: "LABEL", children: [ { tag: "INPUT", type: "checkbox", cls: "uiFilterBrowser-showSrc" }, i18n.text("Output.ShowSource") ] }
+				{ tag: "LABEL", children: [ { tag: "INPUT", type: "checkbox", cls: "uiFilterBrowser-showSrc" }, i18n.text("Output.ShowSource") ] },
+				{ tag: "LABEL", children: [ { tag: "INPUT", type: "checkbox", cls: "uiFilterBrowser-onlyCount" }, i18n.text("Output.OnlyCount") ] }
 			]};
 		},
 		
@@ -4319,10 +4341,15 @@ function limitText(text, len)
 		},
 		_baseCls: "uiHeader",
 		init: function() {
-			var uriTitle=this.config.cluster.base_uri;
-			uriTitle=uriTitle.substring(uriTitle.indexOf("//")+2);
-			uriTitle=uriTitle.substring(0, uriTitle.indexOf("/"));
-			document.title=uriTitle;
+			if (myTitle)
+				document.title=myTitle;
+			else
+			{
+				var uriTitle=this.config.cluster.base_uri;
+				uriTitle=uriTitle.substring(uriTitle.indexOf("//")+2);
+				uriTitle=uriTitle.substring(0, uriTitle.indexOf("/"));
+				document.title=uriTitle;
+			}
 			this._clusterConnect = new ui.ClusterConnect({
 				cluster: this.config.cluster
 			});

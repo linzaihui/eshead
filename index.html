@@ -9,9 +9,10 @@
 		<link rel="stylesheet" href="_site/app.css">
 		<script src="_site/i18n.js" data-baseDir="_site/lang" data-langs="en,fr,pt,zh,zh-TW,tr,ja"></script>
 		<script src="_site/vendor.js"></script>
-		<script src="_site/app.js?ds=0434"></script>
+		<script src="_site/app.js"></script>
 		<script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
 		<script>
+			var myTitle=null;
 			window.onload = function() {
 				if(location.href.contains("/_plugin/")) {
 					var base_uri = location.href.replace(/_plugin\/.*/, '');
@@ -19,6 +20,11 @@
 				var args = location.search.substring(1).split("&").reduce(function(r, p) {
 					r[decodeURIComponent(p.split("=")[0])] = decodeURIComponent(p.split("=")[1]); return r;
 				}, {});
+				if (args["title"])
+				{
+					myTitle = args["title"];
+					document.title = myTitle;
+				}
 				new app.App("body", {
 					id: "es",
 					base_uri: args["base_uri"] || base_uri,

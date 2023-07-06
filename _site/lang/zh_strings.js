@@ -100,6 +100,7 @@ i18n.setKeys({
 	"Output.Table": "Table",
 	"Output.CSV": "CSV",
 	"Output.ShowSource": "显示查询语句",
+	"Output.OnlyCount": "只查询个数",
 	"Preference.SortCluster": "集群排序",
 	"Sort.ByName": "按名称",
 	"Sort.ByAddress": "按地址",
