@@ -4049,7 +4049,7 @@ function limitText(text, len)
 		
 		_addFilterRow_handler: function(foundTime) {
 			this.filtersEl.append(this._filter_template());
-			if (foundTime)
+			if (foundTime===true)
 			{
 				var me=this;
 				setTimeout(function(){
