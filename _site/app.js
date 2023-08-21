@@ -3989,8 +3989,12 @@ function limitText(text, len)
 
 		_createFilters_handler: function(data) {
 			var filters = [];
+			var foundTime=[];
 			function scan_properties(path, obj) {
 				if (obj.properties) {
+					if (obj.properties["time"]&&
+						obj.properties["time"].type=="long")
+						foundTime.push("1");
 					for (var prop in obj.properties) {
 						scan_properties(path.concat(prop), obj.properties[prop]);
 					}
@@ -4040,11 +4044,27 @@ function limitText(text, len)
 				{ path: ["_all"], type: "_all", meta: {}}
 			].concat(filters);
 
-			this._addFilterRow_handler();
+			this._addFilterRow_handler(foundTime.length>0);
 		},
 		
-		_addFilterRow_handler: function() {
+		_addFilterRow_handler: function(foundTime) {
 			this.filtersEl.append(this._filter_template());
+			if (foundTime)
+			{
+				var me=this;
+				setTimeout(function(){
+					var sel=me.filtersEl.find("select.field");
+					var options=sel.find("option");
+					options.forEach(option=>{
+						var idx=option.value.lastIndexOf(".");
+						if (idx>=0&&option.value.substring(idx+1)=="time")
+						{
+							option.selected=true;
+							sel.change();
+						}
+					});
+				}, 10);
+			}
 		},
 		
 		_removeFilterRow_handler: function(jEv) {
@@ -4194,7 +4214,7 @@ function limitText(text, len)
 					spec.type === 'byte' || spec.type === 'short' || spec.type === 'double') {
 				ops = ["range", "sort", "term", "fuzzy", "query_string", "missing"];
 			} else if(spec.type === 'date') {
-				ops = ["term", "range", "fuzzy", "query_string", "missing"];
+				ops = ["sort", "range", "term", "fuzzy", "query_string", "missing"];
 			} else if(spec.type === 'geo_point') {
 				ops = ["missing"];
 			} else if(spec.type === 'ip') {
@@ -4209,8 +4229,10 @@ function limitText(text, len)
 		_changeQueryOp_handler: function(jEv) {
 			var op = $(jEv.target), opv = op.val();
 			op.siblings().remove(".qual,.range,.fuzzy");
-			if(opv === 'sort' || opv === 'match' || opv === 'term' || opv === 'wildcard' || opv === 'prefix' || opv === "query_string" || opv === 'text') {
+			if(opv === 'match' || opv === 'term' || opv === 'wildcard' || opv === 'prefix' || opv === "query_string" || opv === 'text') {
 				op.after({ tag: "INPUT", cls: "qual", type: "text" });
+			} else if(opv === 'sort') {
+				op.after({ tag: "INPUT", cls: "qual", type: "text", value: "desc"});
 			} else if(opv === 'range') {
 				op.after(this._range_template());
 			} else if(opv === 'fuzzy') {
